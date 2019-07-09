@@ -1,0 +1,33 @@
+#setup
+```{r}
+library(tidyverse)
+income <- read_csv("https://www.iun.edu/~cisjw/ds/files/data/zipIncome.csv")
+summary(income)
+```
+
+#scatt plot
+library(ggplot2)
+```{r}
+income %>% ggplot(aes(x=MeanEducation, y=log10(MeanHouseholdIncome))) + geom_point(na.rm=TRUE) + geom_smooth(method=lm,color="orange") 
+```
+
+#hexbin
+library(hexbin)
+```{r}
+income %>% ggplot(aes(x=as.factor(Zip1),y=log10(MeanHouseholdIncome))) + geom_point(aes(color=factor(Zip1)), alpha=0.2, position="jitter") +geom_boxplot(outlier.size = 0, alpha=0.1) + ggtitle("mean household income by zip") + guides(color=FALSE) + xlab("Zip1")
+```
+
+#boxplot1
+```{r}
+income %>% ggplot(aes(x=as.factor(Zip1),y=MeanEducation)) + geom_point(aes(color=factor(Zip1)), alpha=0.2, position="jitter") + geom_boxplot(outlier.size = 0, alpha=0.1) + ggtitle("mean edu by zip") + guides(color=FALSE) + xlab("Zip1")
+```
+
+#cat var
+```{r eval=FALSE,echo=TRUE}
+table(income$eduGroup)
+```
+
+#boxplot2
+```{r}
+income %>% ggplot(aes(x=as.factor(eduGroup),y=log10(MeanHouseholdIncome))) + geom_point(aes(color=factor(eduGroup)), alpha=0.2, position="jitter") + geom_boxplot(outlier.size = 0, alpha=0.1) + ggtitle("mean household income by edu group") + guides(color=FALSE) + xlab("education group")
+```

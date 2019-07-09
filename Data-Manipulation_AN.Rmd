@@ -1,0 +1,88 @@
+---
+title: "Week 6 (Data Manipulation)"
+author: Autumn Neil
+output: 
+  html_document:
+    toc: TRUE
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+mtcars <- data.frame(mtcars)
+```{r}
+mtcars <- mtcars %>% as_tibble
+```
+
+```{r}
+mtcars %>% slice(1:5)
+```
+
+
+```{r}
+mtcars %>% slice(28:32)
+```
+
+```{r}
+mtcars %>% count()
+```
+
+```{r}
+mtcars %>% select(mpg)
+```
+
+```{r}
+mtcars %>% filter(cyl == 6) %>% select(mpg)
+```
+
+```{r}
+mtcars %>% filter(cyl == 6)
+```
+
+```{r}
+mtcars %>% filter(mpg > 25) %>% select(c("mpg", "cyl"))
+```
+
+
+```{r}
+library(tidyverse)
+diamonds <- data.frame(diamonds)
+diamonds[1:5, ]
+nrow(diamonds)
+nrow(diamonds[diamonds$cut == "Very Good", ]) 
+nrow(diamonds[diamonds$carat > "3.0", ]) 
+diamonds[diamonds$color == "D", c("color","cut")]
+mean(diamonds$price)
+```
+
+```{r}
+library(tidyverse)
+diamonds <- diamonds %>% data.frame
+diamonds %>% slice(1:5)
+diamonds %>% count()
+diamonds %>% filter(cut == "Very Good") %>% count()
+diamonds %>% filter(carat > 3.0) %>% count()
+diamonds %>% filter(color == "D") %>% select(c("color", "cut"))
+diamonds %>% summarize(mean(price))
+```
+
+
+
+```{r}
+mtcars %>% group_by(cyl) %>% summarize(n())
+```
+
+```{r}
+mtcars %>% group_by(cyl) %>% summarize(mean(mpg), mean(disp))
+```
+
+```{r}
+diamonds %>% group_by(cut) %>% summarize(max(price), min(price))
+```
+
+```{r}
+diamonds %>% group_by(color) %>% summarize(max(price), mean(price), min(price))
+```

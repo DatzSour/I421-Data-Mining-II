@@ -1,0 +1,159 @@
+title: Data Frame Exercise
+author: Autumn Neil
+output: 
+  html_document:
+    toc: TRUE
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+weather <- data.frame( 
+ Outlook = c("sunny", "sunny", "overcast", NULL, NULL),
+ Temperature = c(85, 80, 83, NULL, NULL),
+ Humidity = c(85, 90, 86, NULL, NULL),
+ Windy = c(FALSE, TRUE, FALSE, NULL, NULL),
+ Play = c("no", "no", "yes", NULL, NULL)
+ )
+print(weather)
+```
+
+
+```{r}
+iris
+```
+
+```{r}
+help(iris)
+```
+
+```{r}
+class(iris)
+```
+
+```{r}
+iris$Species
+```
+
+```{r}
+iris$Petal.Length
+```
+
+```{r irisColumnType1}
+class(iris$Species)
+```
+
+```{r irisColumnType2}
+class(iris$Sepal.Length)
+```
+
+```{r 5.2.5}
+iris[1:50,]
+```
+
+```{r irisColumns1and2}
+iris[, 1:2]
+```
+
+```{r irisPetalLenthAndSepalLength}
+iris[, c("Sepal.Length", "Petal.Length")]
+```
+
+```{r irisExceptSpecies}
+iris[, colnames(iris) !="Species"]
+```
+
+```{r irisSetosa}
+iris[iris$Species == "setosa", ]
+```
+
+```{r 5.2.6}
+summary(iris)
+```
+
+
+```{r 5.3E3}
+df <- data.frame(X = -2:2, Y = 1:5)
+result1 <- df$Y[ df$X > 0 ]
+result2 <- df[ df$X > 0, ]
+```
+
+
+```{r 5.4E4}
+mtcars
+```
+
+```{r mtcarsHelp}
+help(mtcars)
+```
+
+```{r mtcarsHead}
+head(mtcars, 5)
+```
+
+```{r mtcarsTail}
+tail(mtcars, 5)
+```
+
+```{r mtcarsDimensions}
+dim(mtcars)
+```
+
+```{r mtcarsView}
+data(mtcars)
+View(mtcars)
+```
+
+```{r mtcarsMPG}
+mtcars$mpg
+```
+
+```{r mtcars6CylMPG}
+mtcars$mpg[mtcars$cyl == 6]
+```
+
+```{r mtcars6Cyl}
+mtcars[mtcars$cyl == 6, ]
+```
+
+```{r mtcarsMPG>25}
+mtcars[mtcars$mpg > 25, c("mpg", "cyl")]
+```
+
+
+```{r 5.5E5}
+diamonds
+```
+
+```{r diamondsHelp}
+help(diamonds)
+```
+
+```{r diamondsHead}
+head(diamonds, 5)
+```
+
+```{r diamondsDimensions}
+dim(diamonds)
+```
+
+```{r diamondsCutVeryGood}
+diamonds[diamonds$cut == "Very Good", ]
+```
+
+```{r diamondsCaratGreaterThan3}
+count(diamonds[diamonds$carat > 3.0, ])
+```
+
+```{r diamondsColorD}
+diamonds[diamonds$color == "D", c("color", "cut"), drop=FALSE]
+```
+
+```{r diamondsSummary}
+summary(diamonds)
+# avg = $3933
+```
+

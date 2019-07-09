@@ -1,0 +1,68 @@
+---
+title: "R Notebook"
+output:
+  html_document: default
+  html_notebook: default
+---
+```{r}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+
+## Heading 1
+
+### Heading 2
+
+- item 1
+- item 2
+
+
+### Add a New Chunk and Run the chunk
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+
+#### Chunk 1
+
+```{r chunk_name, include=TRUE}
+x <- rnorm(100)
+y <- 2*x + rnorm(100)
+cor(x, y)
+```
+
+#### Plot 
+```{r scatterplot, fig.width=8, fig.height=6}
+plot(x,y)
+```
+
+
+
+#### Chunk 2
+
+```{r eval=TRUE}
+iris
+plot(iris)
+```
+
+
+```{r eval=TRUE}
+cars
+```
+
+```{r eval=FALSE}
+plot(cars)
+```
+
+
+
+
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).

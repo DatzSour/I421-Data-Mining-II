@@ -1,0 +1,58 @@
+#E1
+weather <- data.frame(
+   outlook     = c("sunny", "sunny", "overcast"),
+   temperature = c(85, 80, 83),
+   humidity    = c(85, 90, 86),
+   windy       = c("FALSE", "TRUE", "TRUE"),
+   play        = c("no", "no", "yes")
+ )
+
+print(weather)
+
+#E2
+iris
+## starting httpd help server ... done
+
+class(iris)
+
+iris$Species
+
+class(iris$Species)
+
+iris[1:50,]
+
+iris[c(1,2)]
+
+iris[c("Speal.Length", "Petal.Length")]
+
+iris$Species[ iris$species > "setosa" ]
+
+summary(iris)
+
+#E3
+df <- data.frame(X = -2:2, Y = 1:5)
+result1 <- df$Y[ df$X > 0 ]
+result2 <- df[ df$X > 0, ]
+
+#E4
+mtcars
+head(mtcars)
+tail(mtcars)
+mtcars$mpg
+mtcars$mpg[ mtcars$cyl > 6]
+mtcars$cyl [ mtcars$cyl 6]
+mtcars$mpg[ mtcars$mpg c("mpg", "cyl")]
+
+#E5
+install.packages("ggplot2")
+library(ggplot2)
+print(diamonds)
+help(diamonds)
+head(diamonds)
+nrow(diamonds)
+ncol(diamonds)
+library(dplyr)
+result <- filter(data, cut = Very Good)
+diamonds$carat[ diamonds$carat > 3]
+diamonds$color[ diamonds$color > D, c("color", "cut") ]
+summary(diamonds)

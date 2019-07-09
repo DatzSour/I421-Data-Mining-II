@@ -1,0 +1,77 @@
+---
+title: Correlation Analysis
+author: Autumn Neil
+output: 
+  html_document:
+    toc: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+
+```{r}
+weather <- read_csv("https://www.iun.edu/~cisjw/ds/files/data/weather.csv")
+```
+
+
+```{r}
+normalize <- function(v, range=1){
+    v.norm = (v - min(na.omit(v))) / (max(na.omit(v))-min(na.omit(v))) * range
+    return(v.norm)
+}
+normalizeDataset <- function (data){
+  data.norm <- data
+  types <- sapply(data, is.numeric)
+  for (i in 1:length(types)) {
+    if(types[i]==TRUE){
+      data.norm[ ,i] <- normalize(data[ ,i])
+    }
+  }
+  return(data.norm)
+}
+```
+
+```{r}
+weather.norm <- normalizeDataset(weather)
+weather.norm
+```
+
+```{r}
+pairCorr <- function (x,y) {
+  length <- length(x)
+  mu_x <- mean(x)
+  mu_y <- mean(y)
+  sd_x <- sd(x)
+  sd_y <- sd(y)
+  sum <- 0
+  for (i in 1:length) {
+    sum <- sum + (x[i]-mu_x)*(y[i]-mu_y)
+  }
+  corr <- sum/((length-1)*sd_x*sd_y)
+  return(corr)
+}
+```
+
+```{r}
+pairCorr(weather.norm$temperature, weather.norm$humidity)
+```
+
+
+```{r}
+train <- read_csv("https://www.iun.edu/~cisjw/ds/files/data/train.csv")
+```
+
+```{r}
+train %>% distinct(Survived)
+train %>% distinct(Sex)
+```
+
+```{r}
+train_table <- table(train$Survived, train$Sex, dnn = c("Survived", "Sex"))
+train_table
+summary(train_table)
+```

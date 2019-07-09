@@ -1,0 +1,458 @@
+---
+title: "Final Exam"
+name:  "Autumn Neil"
+date:  '`r Sys.Date()`'
+output:
+    html_document:
+    toc: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(polycor)
+library(corrplot)
+library(rpart)
+library(rpart.plot)
+library(DiagrammeR)
+library(useful)
+library(xgboost)
+library(vip)
+library(randomForest)
+```
+
+
+```{r}
+entropy.gini <- function(input, type=1, discrete=1){
+
+  if (type==1){
+    if (discrete == 0){
+      breaks <- c(floor(min(input)):ceiling(max(input)))
+    } else {
+      breaks <- c(min(input):(max(input)+1))
+    }
+    freq <- hist(input,include.lowest=TRUE,right=FALSE, breaks=breaks,col='lightblue')
+    counts <- freq$counts
+    total <- sum(counts)
+    
+  }
+  else{
+    breaks <- length(input)
+    total <- sum(input)
+    counts <- input
+    hist(input)
+  }
+  
+  entropy <- 0
+  for(x in counts){
+    if(x!=0)
+      temp <- x/total*log2(x/total)
+    else
+      temp <- 0
+    entropy <- entropy - temp
+  }
+  
+  gini <- 1-sum((counts/total)**2)
+  
+  mylist <- list("breaks"=breaks,"entropy"=entropy,"gini"=gini)
+  return(mylist)
+}
+```
+
+# 1.1
+```{r}
+breast_cancer <- as_tibble(read.table("https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer/breast-cancer.data", 
+  header = FALSE, na = "?", sep = ",", col.names=c(
+    "class", "age", "menopause", "tumor_size", "inv_nodes", "node_caps", 
+    "deg_malig", "breast", "breast_quad", "irradiat")))
+```
+
+
+# 1.2
+```{r}
+unique(breast_cancer$age)
+```
+
+```{r}
+breast_cancer_table <- table(breast_cancer$age, breast_cancer$class, dnn = c("Age", "Recurrence"))
+breast_cancer_table
+```
+
+```{r}
+probAge1 <- count(breast_cancer %>% filter(class == "recurrence-events") %>% filter(age == "20-29")) /
+  count(breast_cancer %>% filter(age == "20-29"))
+probAge2 <- count(breast_cancer %>% filter(class == "recurrence-events") %>% filter(age == "30-39")) /
+  count(breast_cancer %>% filter(age == "30-39"))
+probAge3 <- count(breast_cancer %>% filter(class == "recurrence-events") %>% filter(age == "40-49")) /
+  count(breast_cancer %>% filter(age == "40-49"))
+probAge4 <- count(breast_cancer %>% filter(class == "recurrence-events") %>% filter(age == "50-59")) /
+  count(breast_cancer %>% filter(age == "50-59"))
+probAge5 <- count(breast_cancer %>% filter(class == "recurrence-events") %>% filter(age == "60-69")) /
+  count(breast_cancer %>% filter(age == "60-69"))
+probAge6 <- count(breast_cancer %>% filter(class == "recurrence-events") %>% filter(age == "70-79")) /
+  count(breast_cancer %>% filter(age == "70-79"))
+recur_probs <- c(probAge1, probAge2, probAge3, probAge4, probAge5, probAge6)
+ages <- c ("20-29", "30-39", "40-49", "50-59", "60-69", "70-79")
+names(recur_probs) <- ages
+```
+
+```{r}
+# age group wi/highest risk of recurrence 
+names(recur_probs)[which.max(recur_probs)]
+```
+
+
+# 1.3
+```{r}
+unique(breast_cancer$breast)
+```
+
+```{r}
+breast_cancer_table <- table(breast_cancer$breast, breast_cancer$class, dnn = c("Breast", "Recurrence"))
+breast_cancer_table
+```
+
+```{r}
+probLeft <- count(breast_cancer %>% filter(class == "recurrence-events") %>% filter(breast == "left")) /
+  count(breast_cancer %>% filter(breast == "left"))
+probRight <- count(breast_cancer %>% filter(class == "recurrence-events") %>% filter(breast == "right")) /
+  count(breast_cancer %>% filter(breast == "right"))
+```
+
+```{r}
+recur_probs_breasts <- c(probLeft, probRight)
+```
+
+```{r}
+breasts <- c ("left", "right")
+```
+
+```{r}
+names(recur_probs_breasts) <- breasts
+```
+
+```{r}
+# group w/highest risk of recurrence 
+names(recur_probs_breasts)[which.max(recur_probs_breasts)]
+```
+
+
+# 1.4
+```{r}
+breast_cancer <- breast_cancer %>% drop_na()
+```
+
+
+# 1.5
+```{r}
+breast_cancer.cor <- hetcor(breast_cancer$class, breast_cancer$age, breast_cancer$menopause, breast_cancer$tumor_size, breast_cancer$inv_nodes, breast_cancer$node_caps, breast_cancer$deg_malig, breast_cancer$breast, breast_cancer$breast_quad, breast_cancer$irradiat)
+
+```
+
+```{r}
+breast_cancer.corrmat <- as_tibble(breast_cancer.cor$correlations)
+```
+
+```{r}
+colnames(breast_cancer.corrmat) <- colnames(breast_cancer)
+```
+
+```{r}
+breast_cancer.corrmat
+```
+
+```{r}
+breast_cancer.corrmat <- breast_cancer.corrmat %>% 
+  mutate(attribute=colnames(breast_cancer.corrmat)) %>% 
+  select(attribute, class, age, menopause, tumor_size, inv_nodes, node_caps, deg_malig, breast, breast_quad, irradiat)
+```
+
+```{r}
+rank <- breast_cancer.corrmat %>% 
+  select(attribute, class) %>% 
+  mutate(squared.correlation=class^2) %>%
+  arrange(desc(squared.correlation)) 
+rank
+```
+
+```{r}
+corrplot(breast_cancer.cor$correlations, method="shade", type="upper", tl.col="black", tl.srt=45)
+```
+
+
+# 1.6
+```{r}
+counts <- (breast_cancer %>% 
+  select(class) %>%
+  group_by(class) %>%
+  summarise(count=n())
+  )$count
+```
+
+```{r}
+entropy_set <-entropy.gini(counts)
+```
+
+```{r}
+entropy_set$entropy
+```
+
+```{r}
+info.before <- entropy_set$entropy
+subsets.age <- table(breast_cancer$age, breast_cancer$class)
+subsets.age
+```
+
+```{r}
+entropy20_29 <-entropy.gini(subsets.age["20-29",], type=2)$entropy
+entropy30_39 <-entropy.gini(subsets.age["30-39",], type=2)$entropy
+entropy40_49 <-entropy.gini(subsets.age["40-49",], type=2)$entropy
+entropy50_59 <-entropy.gini(subsets.age["50-59",], type=2)$entropy
+entropy60_69 <-entropy.gini(subsets.age["60-69",], type=2)$entropy
+entropy70_79 <-entropy.gini(subsets.age["70-79",], type=2)$entropy
+```
+
+```{r}
+total <- nrow(breast_cancer)
+w20_29 <- sum(subsets.age["20-29",])/total
+w30_39 <- sum(subsets.age["30-39",])/total
+w40_49 <- sum(subsets.age["40-49",])/total
+w50_59 <- sum(subsets.age["50-59",])/total
+w60_69 <- sum(subsets.age["60-69",])/total
+w70_79 <- sum(subsets.age["70-79",])/total
+info.age <- w20_29*entropy20_29 + w30_39*entropy30_39 + w40_49*entropy40_49 + w50_59*entropy50_59 + w60_69*entropy60_69 + w70_79*entropy70_79
+
+```
+
+```{r}
+gain.inv_nodes <- info.before - info.inv_nodes
+gain.inv_nodes
+```
+
+
+```{r}
+subsets.node_caps <- table(breast_cancer$node_caps, breast_cancer$class)
+subsets.node_caps
+```
+
+
+```{r}
+entropy_ncno <-entropy.gini(subsets.node_caps["no",], type=2)$entropy
+entropy_ncyes <-entropy.gini(subsets.node_caps["yes",], type=2)$entropy
+```
+
+
+```{r}
+w_ncno <- sum(subsets.node_caps["no",])/total
+w_ncyes <- sum(subsets.node_caps["yes",])/total
+info.node_caps <- w_ncno*entropy_ncno + w_ncyes*entropy_ncyes
+```
+
+
+```{r}
+gain.node_caps <- info.before - info.node_caps
+gain.node_caps
+```
+
+
+```{r}
+subsets.deg_malig <- table(breast_cancer$deg_malig, breast_cancer$class)
+subsets.deg_malig
+```
+
+
+```{r}
+entropy_dm1 <-entropy.gini(subsets.deg_malig["1",], type=2)$entropy
+entropy_dm2 <-entropy.gini(subsets.deg_malig["2",], type=2)$entropy
+entropy_dm3 <-entropy.gini(subsets.deg_malig["3",], type=2)$entropy
+```
+
+
+```{r}
+w_dm1 <- sum(subsets.deg_malig["1",])/total
+w_dm2 <- sum(subsets.deg_malig["2",])/total
+w_dm3 <- sum(subsets.deg_malig["3",])/total
+info.deg_malig <- w_dm1*entropy_dm1 + w_dm2*entropy_dm2 + w_dm3*entropy_dm3
+```
+
+
+```{r}
+gain.deg_malig <- info.before - info.deg_malig
+gain.deg_malig
+```
+
+
+```{r}
+subsets.breast <- table(breast_cancer$breast, breast_cancer$class)
+subsets.breast
+```
+
+
+```{r}
+entropy_left <-entropy.gini(subsets.breast["left",], type=2)$entropy
+entropy_right <-entropy.gini(subsets.breast["right",], type=2)$entropy
+```
+
+
+```{r}
+w_left <- sum(subsets.breast["left",])/total
+w_right <- sum(subsets.breast["right",])/total
+info.breast <- w_left*entropy_left + w_right*entropy_right
+```
+
+
+```{r}
+gain.breast <- info.before - info.breast
+gain.breast
+```
+
+
+```{r}
+subsets.breast_quad <- table(breast_cancer$breast_quad, breast_cancer$class)
+subsets.breast_quad
+```
+
+
+```{r}
+entropy_bq01 <-entropy.gini(subsets.breast_quad["central",], type=2)$entropy
+entropy_bq02 <-entropy.gini(subsets.breast_quad["left_low",], type=2)$entropy
+entropy_bq03 <-entropy.gini(subsets.breast_quad["left_up",], type=2)$entropy
+entropy_bq04 <-entropy.gini(subsets.breast_quad["right_low",], type=2)$entropy
+entropy_bq05 <-entropy.gini(subsets.breast_quad["right_up",], type=2)$entropy
+```
+
+
+```{r}
+w_bq01 <- sum(subsets.breast_quad["central",])/total
+w_bq02 <- sum(subsets.breast_quad["left_low",])/total
+w_bq03 <- sum(subsets.breast_quad["left_up",])/total
+w_bq04 <- sum(subsets.breast_quad["right_low",])/total
+w_bq05 <- sum(subsets.breast_quad["right_up",])/total
+info.breast_quad <- w_bq01*entropy_bq01 + w_bq02*entropy_bq02 + w_bq03*entropy_bq03 + w_bq04*entropy_bq04 + w_bq05*entropy_bq05
+```
+
+
+```{r}
+gain.breast_quad <- info.before - info.breast_quad
+gain.breast_quad
+```
+
+
+```{r}
+subsets.irradiat <- table(breast_cancer$irradiat, breast_cancer$class)
+subsets.irradiat
+```
+
+
+```{r}
+entropy_irrno <-entropy.gini(subsets.irradiat["no",], type=2)$entropy
+entropy_irryes <-entropy.gini(subsets.irradiat["yes",], type=2)$entropy
+```
+
+```{r}
+w_irrno <- sum(subsets.irradiat["no",])/total
+w_irryes <- sum(subsets.irradiat["yes",])/total
+info.irradiat <- w_irrno*entropy_irrno + w_irryes*entropy_irryes
+```
+
+```{r}
+gain.irradiat <- info.before - info.irradiat
+gain.irradiat
+```
+
+
+```{r}
+gains <- c(gain.age, gain.breast, gain.breast_quad, gain.deg_malig, gain.inv_nodes, gain.irradiat, gain.menopause, gain.node_caps, gain.tumor_size)
+gain_names <- c("age", "breast", "breast_quad", "deg_malig", "inv_nodes", "irradiat", "menopause", "node_caps", "tumor_size")
+names(gains) <- gain_names
+# root node
+names(gains)[which.max(gains)]
+```
+
+
+```{r}
+set.seed(20)
+fit <- rpart(deg_malig~age+breast+breast_quad+inv_nodes+irradiat+menopause+node_caps+tumor_size,
+      method="class", data=breast_cancer,
+      control=rpart.control(),
+      parms=list(split='information'))
+summary(fit)
+rpart.plot(fit,type=4,extra=2,roundint=FALSE)
+```
+
+
+```{r}
+set.seed(20)
+fit <- rpart(deg_malig~age+breast+breast_quad+inv_nodes+irradiat+menopause+node_caps+tumor_size,
+      method="class", data=breast_cancer,
+      control=rpart.control(minsplit=4,cp=0.01),
+      parms=list(split='information'))
+summary(fit)
+rpart.plot(fit,type=4,extra=2,roundint=FALSE)
+```
+
+
+
+```{r}
+breast_cancer <- breast_cancer %>% mutate(recur_label=ifelse(class=="recurrence-events", 1, 0))
+```
+
+```{r}
+set.seed(52)
+rows <- sample(nrow(breast_cancer))
+breast_cancer <- breast_cancer[rows,]
+split <- round(nrow(breast_cancer)*0.66)
+train <- breast_cancer[1:split, ]
+test <- breast_cancer[split+1:nrow(breast_cancer), ]
+```
+
+
+```{r}
+trainFormula <- recur_label~deg_malig+age+breast+breast_quad+inv_nodes+irradiat+menopause+node_caps+tumor_size
+trainX <- build.x(trainFormula,train,contrasts=FALSE)
+trainY <- build.y(trainFormula,train)
+trainBoost <- xgboost::xgboost(
+  data=trainX,
+  label=trainY,
+  max.depth=3,
+  eta=0.3,
+  #nthread=4,
+  nrounds=10,
+  objective="binary:logistic")
+xgb.plot.multi.trees(trainBoost, feature_names=colnames(trainX))
+```
+
+
+```{r}
+xgb.plot.tree(model=trainBoost, trees=2:3, render=TRUE)
+```
+
+```{r}
+importance_matrix <- xgb.importance(
+  model = trainBoost,
+  feature_names =colnames(trainX)
+  )
+print(importance_matrix)
+xgb.plot.importance(importance_matrix = importance_matrix)
+```
+
+```{r}
+vip::vip(trainBoost,num_features=18)
+```
+
+```{r}
+trainY <- build.y(trainFormula,train)
+boostedForest <- xgboost(
+  data=trainX,
+  label=trainY,
+  max_depth=4,
+  num_parallel_tree=1000,
+  subsample=0.5,
+  colsample_bytree=0.5,
+  nrounds=3,
+  objective="binary:logistic"
+)
+xgb.plot.multi.trees(
+  boostedForest,
+  feature_names=colnames(trainX)
+)
+```

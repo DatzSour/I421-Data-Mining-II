@@ -1,0 +1,258 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = FALSE,eval=FALSE)
+```
+# Reference
+https://cran.r-project.org/web/packages/xgboost/vignettes/xgboostPresentation.html#basic-training-using-xgboost
+
+# Prerequisite
+```{r}
+library("rpart")
+library("rpart.plot")
+library("party")
+library("tidyverse")
+```
+
+# Import data
+```{r}
+weather <- read_csv("https://www.iun.edu/~cisjw/ds/files/data/weather-nominal.csv")
+summary(weather)
+```
+
+# Prepare training and test sets
+```{r}
+set.seed(20)
+nrows <- sample(nrow(weather))
+train <- weather[nrows[1:12],] #take 12 samples for train
+test <- weather[nrows[13:14],] #take 2 samples for test
+train
+test
+```
+
+
+# Fit tree models
+The `rpart` package can do classification by fitting data to a decision tree. The following parameters control the tree properties.
+
+- minsplit=20: the minimum number of observations that must exist in a node in order for a split to be attempted.
+
+- minbucket=round(minsplit/3): the minimum number of observations in any leaf node.
+
+- cp=0.01: complexity parameter. Any split which does not improve the fit by cp will likely be pruned off by cross-validation, and that hence the program need not pursue it.
+
+- maxdepth=30: Set the maximum depth of any node of the final tree, with the root node counted as depth 0. Values greater than 30 rpart will give nonsense results on 32-bit machines.
+
+
+# Run 1: method=information,minsplit=4
+```{r}
+# minsplit=4
+set.seed(2001)
+tree.model <- rpart(formula = play~outlook+humidity+windy+temperature, 
+                    data = train,
+                    method = "class", 
+                    control = rpart.control(minsplit=4,cp=0.01),
+                    parms = list(split='information'))
+
+rpart.plot(tree.model,type = 4, extra = 2) #visual tree
+summary(tree.model) #textual tree
+print(tree.model) #decision rules
+```
+
+## Apply the tree to the test set
+Apply the tree model to predict the `play` label for the observations in the test set
+```{r}
+test$predict<- predict(tree.model, test, type="class")
+test %>% select(play,predict)
+```
+
+Alternatively, instead of a class label, tree can output the probability for each class
+```{r}
+predict.prob <- predict(tree.model, test, type = "prob")
+predict.prob #a matrix
+```
+
+## Evaluate accuracy by counting correct predictions
+```{r}
+accuracy <- nrow(test[test$play==test$predict,])/nrow(test)
+accuracy
+```
+
+
+# Run 2: 
+Do: Try 3 and 2 for minsplit. How does minsplit change the tree and accuracy?
+
+# Run 3:
+Do: Compare two methods, information and gini, in terms of the tree complexity and accuracy.
+
+
+
+# The credit data 
+R4Everyone Page 354:
+http://archive.ics.uci.edu/ml/datasets/Statlog+(German+Credit+Data) 
+
+```{r}
+credit <- read_delim(
+  "http://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/german.data",
+  delim=" ",
+  col_names=FALSE
+  )
+colnames(credit) <- c("Checking","Duration",
+                      "CreditHistory","Purpose",
+                      "CreditAmount","Savings",
+                      "Employment","InstallmentRate",
+                      "GenderMarital","OtherDebtors",
+                      "YearsAtResidence","RealEstate",
+                      "Age","OtherInstallment",
+                      "Housing","ExistingCredits",
+                      "Job","NumLiable","Phone","Foreign","Credit")
+
+credit %>% select_if(is.numeric) %>% colnames
+```
+
+## A single tree: rpart
+```{r}
+library(rpart)
+library(rpart.plot)
+creditTree_info <- rpart(Credit~CreditAmount+Age+CreditHistory+Employment,
+                    data=credit,
+                    method = "class", 
+                    #control = rpart.control(minsplit=4,cp=0.01),
+                    parms = list(split='information'))
+rpart.plot(creditTree_info, extra=4)
+```
+
+```{r}
+creditTree <- rpart(Credit~CreditAmount+Age+CreditHistory+Employment,
+                    data=credit,
+                    method = "class", 
+                    #control = rpart.control(minsplit=50,cp=0.01),
+                    parms = list(split='gini'))
+rpart.plot(creditTree, extra=4)
+```
+
+## Boosted tree
+Reference: R4Everyone Page 361. Code on page 362
+
+```{r}
+#install.packages(useful)
+#install.packages(xgboost)
+#install.packages(DiagrammeR)
+library(useful)
+library(xgboost)
+library(DiagrammeR)
+#RESPONSE MUST BE 0 AND 1.
+creditFormula <- Credit~CreditHistory+Purpose+Employment+Duration+Age+CreditAmount - 1  
+creditX <- build.x(creditFormula,credit,contrasts=FALSE)
+creditY <- build.y(creditFormula,credit)-1
+creditBoost <- xgboost::xgboost(
+  data=creditX,
+  label=creditY,
+  max.depth=3,
+  eta=0.3,
+  #nthread=4,
+  nrounds=10,
+  objective="binary:logistic")
+xgb.plot.multi.trees(
+  creditBoost,
+  feature.names=colnames(creditX)
+)
+```
+
+### Save the tree model,load the mode and make predictions
+```{r}
+xgb.save(creditBoost, "xgboost.model")
+model <- xgb.load("xgboost.model")
+```
+---
+scores <- predict(model, unlabeled_data) # don't run
+---
+
+### Single tree plots
+```{r}
+#install.packages(rsvg)
+#install.packages(DiagrammeRsvg)
+library(DiagrammeR)
+xgb.plot.tree(model=creditBoost, trees=2:3, render=TRUE)
+```
+
+### Variable importance
+```{r}
+importance_matrix <- xgb.importance(
+  model = creditBoost,
+  feature_names =colnames(creditX)
+  )
+print(importance_matrix)
+xgb.plot.importance(importance_matrix = importance_matrix)
+#Alternative
+vip::vip(creditBoost,num_features=10)
+```
+
+## Advanced xgboost: xgb.train with the training and test sets
+Data partition: http://topepo.github.io/caret/data-splitting.html
+
+```{r}
+rows <- sample(nrow(credit))
+credit <- credit[rows,]
+split <- round(nrow(credit)*2/3)
+train <- credit[1:split,]
+test <- credit[(split+1):nrow(credit),]
+
+creditFormula <- Credit~CreditHistory+Purpose+Employment+Duration+Age+CreditAmount - 1  
+trainX <- build.x(creditFormula,train,contrasts=FALSE)
+trainY <- build.y(creditFormula,train)-1
+testX <- build.x(creditFormula,test,contrasts=FALSE)
+testY <- build.y(creditFormula,test)-1
+dtrain <- xgb.DMatrix(data = trainX, label=trainY)
+dtest <- xgb.DMatrix(data = testX, label=testY)
+
+watchlist <- list(train=dtrain, test=dtest)
+bst <- xgb.train(
+  data=dtrain, 
+  max_depth=3, 
+  eta=0.3, 
+  nthread = 2, 
+  nrounds=10, 
+  watchlist=watchlist, 
+  objective= "binary:logistic")
+```
+
+
+
+## Random forest
+R4Everyone Page 364
+```{r}
+#install.packages("randomForest")
+library(randomForest)
+creditFormula <- Credit~CreditHistory+Purpose+Employment+Duration+Age+CreditAmount - 1 
+creditX <- build.x(creditFormula,credit,contrasts=FALSE)
+creditY <- build.y(creditFormula,credit)
+creditForest <- randomForest(x=creditX,y=creditY)
+creditForest
+```
+
+---
+Another call sample (don't run):
+{r eval=FALSE}
+library(randomForest)
+fit <- randomForest(yourformula,data=train)
+print(fit) # view results
+importance(fit) # importance of each predictor
+---
+
+
+## Boosted Random forest via xgboost
+```{r}
+creditY <- build.y(creditFormula,credit)-1
+boostedForest <- xgboost(
+  data=creditX,
+  label=creditY,
+  max_depth=4,
+  num_parallel_tree=1000,
+  subsample=0.5,
+  colsample_bytree=0.5,
+  nrounds=3,
+  objective="binary:logistic"
+)
+xgb.plot.multi.trees(
+  boostedForest,
+  feature.names=colnames(creditX)
+)
+```

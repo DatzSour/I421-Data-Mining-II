@@ -1,0 +1,416 @@
+---
+title: "Modern Art and Data Science"
+author: "Autumn Neil"
+date: '`r Sys.Date()`'
+output:
+  html_document: default
+link-citations: yes
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, results = "hide",message = FALSE )
+```
+
+## Introduction
+
+What is modern art? Modern art is the nontraditional and creative response to the rationalist practices and perspectives of the new world from the technological advances of the industrial age, compared to the past. In general, modern art denotes the styles and philosophy of the art which tends aways from narrative toward abstraction. 
+
+The modern era arrived with the dawn of the industrial revolution in Western Europe in the mid-19th century. Originally, the term "modern art" refers to late 19th and early-to-mid 20th century art. Over the course of 100 years, an eclectic range of modern art genres have been created through many major art movements, including Impressionism, Expressionism, Cubism, Surrealism, Abstract Art, Pop Art, Op Art and so on. Each genre has its own characteristics that were created by artists to distinguish the genre from other styles, which are brought by creating new ways of depicting objects, using new medium, colors or brush strokes and so on.
+
+
+Due to the ever-increasing popularity of electronics and Internet use, the incredible amount of data has been generated everyday. In addition, more and more governments, organizations and web sites provide the public with free access to their data, with the promise of no privacy breach. This has made it a trend of discovering interesting patterns and gaining new insights from data, especially large collections of data.
+
+In this project, we plan to take a new perspective on understanding the modern art with a data science approach. 
+
+The Museum of Modern Art (MoMA) is an art museum located in Midtown Manhattan in New York City. MoMA has been important in developing and collecting modernist art, and is often identified as one of the largest and most influential museums of modern art in the world. MoMA's collection offers an overview of both modern and contemporary art, including works of architecture and design, drawing, painting, sculpture, photography, prints, illustrated books and artist's books, film, and electronic media. The Museum has taken the intiative on publishing their collection data for research purpose at Github and encourage everyone use their data for data exploration and analysis.   
+
+Therefore, we will explore and analyse the MoMA collection data with both data exploratory analysis and machine learning techniques. While quantitative techniques will not replace historical methods, it does allow us to study data science and machine learning methods. We can evaluate how effective the new methods extract information from data and how meaningful they are able to interpret the Modern Art quantitatively.
+
+
+
+## The Collection Data of MoMA
+
+The MoMA research datasets are updated on a regular basis at Github and are placed in the public domain using a CC0 License. 
+
+As of October 27th 2018, the `Artworks` dataset contains 135,423 records, representing all of the works that have been accessioned into MoMA’s collection and cataloged in their database. It includes basic metadata for each work, including title, artist, date made, medium, dimensions, and date acquired by the Museum. Some of these records have incomplete information and are noted as “not Curator Approved.”
+
+The `Artists` dataset contains 15,651 records, representing all the artists who have work in MoMA's collection and have been cataloged in our database. It includes basic metadata for each artist, including name, nationality, gender, birth year, death year, Wiki QID, and Getty ULAN ID.
+
+At this time, both datasets are available in CSV format, encoded in UTF-8. While UTF-8 is the standard for multilingual character encodings, it is not correctly interpreted by Excel on a Mac. Users of Excel on a Mac can convert the UTF-8 to UTF-16 so the file can be imported correctly. The datasets are also available in JSON.
+
+With the two datasets, we can analyze relations between works on art genres, a single artist, multiple artists, the works from a whole historical period, two genders, collection metadata. 
+
+
+## Software Tool
+
+The following analysis is performed in RSTudio, a GUI-based tool for the R language. 
+
+
+## Initial Data Exploration
+
+
+### 1. The R Libraries
+
+If there are more libraries that you need for this project, you need to include them in the following code chunk.
+
+install.packages("tidyverse")
+```{r}
+library(tidyverse)
+```
+
+
+
+### 2. Importing Two Datasets
+
+
+- The Artworks dataset of MoMA
+
+```{r}
+url <- "https://media.githubusercontent.com/media/MuseumofModernArt/collection/master/Artworks.csv"
+artworks <- readr::read_csv(url)
+```
+
+
+- The Artists dataset of MoMA
+
+```{r}
+url <- "https://media.githubusercontent.com/media/MuseumofModernArt/collection/master/Artists.csv"
+artists <- readr::read_csv(url)
+```
+
+
+In the following, you will work with the two tibbles: `artworks` and `artists`.
+
+
+<hr>
+### 3. Find dimension of artworks and artists (Complete) 
+
+Write a code chunk here.
+```{r}
+dim(artworks)
+```
+
+
+<hr>
+
+### 4. Understand variables (Complete) 
+
+The Collection data doesn't come with a description of their variables. Here you need to figure out each variable. Write down, for each imported dataset, `artworks` and `artists`, every variable with its name, data type, the meaning and a sample value. 
+Hint: Run `str(artworks)`.
+```{r}
+str(artworks)
+```
+
+<hr>
+
+### 29 variables in the `artworks` (Complete)
+
+
+- Title (character): Ferdinandsbr�cke Project
+- Artist (character): Otto Wagner
+- ConstituentID (character): 6210
+- ArtistBio (character): (Austrian, 1841-1918)
+- Nationality (character): (Austrian)
+- Begin date: (1841)
+- End date: (1918)
+- Gender: (Male)
+- Date: 1896
+- Medium: Ink and cut-and-pasted painted pages on paper
+- Dimensions: 19 1/8 x 66 1/2" (48.6 x 168.9 cm)
+- CreditLine: Fractional and promised gift of Jo Carole and Ronald S. Lauder
+- AccessionNumber: 885.1996
+- Classification: Architecture
+- Department: Architecture & Design
+- DateAquired: 1996-04-09
+- Cataloged: Y
+- ObjectID: 2
+- URL: http://www.moma.org/collection/works/2
+- ThumbnailURL: http://www.moma.org/media/W1siZiIsIjU5NDA1Il0sWyJwIiwiY29udmVydCIsIi1yZXNpemUgMzAweDMwMFx1MDAzZSJdXQ.jpg?sha=137b8455b1ec6167
+- Circumference (cm): N/A
+- Depth (cm): N/A
+- Diameter (cm): N/A
+- Height (cm): 48.6000
+- Length (cm): N/A
+- Weight (kg): N/A
+- Width (cm): 168.9000
+- Seat Height (cm): N/A
+- Duration (sec.): N/A
+- YearAquired: 1996
+- MonthAquired: 04
+
+
+
+### 9 variables in the `artists` 
+
+
+- ContituentID (integer): The ID number of artist. 1
+- DisplayName (character): the Artist name. "Robert Arneso"
+- ArtistBio (character): the creator's nationality and lifetime. "American, 1930–1992"
+- Nationality (character): "American"
+- Gender (character): "Female" "Male"
+- BeginDate (integer): birth year. 1930
+- EndDate (integer): year deceased. 1992, 0
+- Wiki QID (character): (incomplete. find this description.) NA, "Q1063584"
+- ULAN (integer): Aritist ID in the Union List of Artist Names. NA, 500027998
+
+
+
+
+# Task 1: Exploratory Data Analysis & Data Visualization
+
+
+In this task, you need to visualize the MoMA data by thinking about the plots that may contribute to depicting the Museum and the Modern Art. 
+
+A couple of examples have been given in the following. You need to study the given examples and complete the rest four questions. Each question should be completed with both the script and conclusion parts. Each plot should also be saved to a file. 
+
+
+
+## Question 1: The Distribution of Yearly Acquisitions (Complete) 
+
+Before we dive into the artworks, we may want to find how the yearly acquisitions vary in the Museum. Study the following code chunk and learn how to process data in R. 
+
+
+The first chunk extracts the year and month from the `DateAcquired`, adds two new variables, `YearAcquired` and `MonthAcquired`, to the `artworks` tibble. Note that both columns are of type `character'.
+
+```{r}
+#The first chunk
+artworks <- 
+  artworks %>% 
+  mutate(YearAcquired=format(DateAcquired,"%Y")) %>%
+  mutate(MonthAcquired=format(DateAcquired,"%m"))
+```
+
+
+Now you may want to find the range of acquisition years by running the command:
+
+```{r results='markup'}
+summary(as.numeric(artworks$YearAcquired))
+```
+
+The summary of `YearAcquired` indicates that the minimum year 1216 seems open to question. At this moment, you may dig a little further by finding how many works in the dataset are labeled with the year of 1216.
+
+```{r results='markup'}
+artworks %>% 
+  filter(YearAcquired=="1216") %>%
+  summarise(count=n())
+```
+
+The result shows only one work. Very likely it is a data entry mistake. Now let's exclude NA and "2016" and find the year range again.
+
+```{r results='markup'}
+artworks %>% 
+  filter(!is.na(YearAcquired) & YearAcquired!="1216") %>% 
+  summarise(min(as.numeric(YearAcquired)), max(as.numeric(YearAcquired)))
+
+```
+
+The code execution shows the range of acquisition years is between 1929 and 2018. 
+
+
+
+The second chunk perform three operations in order with the pipe operator: group rows by the YearAcquired column, summarise each year group by counting the rows, write the group counts into a new column `count`, and lastly, sort the groups by count in descending order.
+
+```{r results='markup'}
+#The second chunk
+artworks %>%
+  group_by(YearAcquired) %>%
+  summarise(count=n()) %>%
+  arrange(desc(count))
+```
+
+It can be observed from the tibble view, `YearAcquired` in the fourth row is `NA`, which we will exclude from the distribution chart. 
+
+
+
+
+
+
+```{r}
+##Distribution of yearly acquisitions (bar chart)
+artworks %>% 
+  filter(!is.na(YearAcquired) & YearAcquired!="1216") %>%  
+  ggplot(aes(x=YearAcquired)) + 
+  geom_bar(color='white', alpha=0.5, fill="#8470ff") + 
+  theme_light() +
+  theme(axis.text.x=element_text(size=8,angle=90,hjust=1)) +
+  ylab("") + xlab("")
+```
+
+### Tip: Save plot to file
+
+```{r}
+png("plot1.png", width = 1500) 
+artworks %>% 
+  filter(!is.na(YearAcquired) & YearAcquired!="1216") %>%  
+  ggplot(aes(x=YearAcquired)) + 
+  geom_bar(color='white', alpha=0.5, fill="#8470ff") + 
+  theme_light() +
+  theme(axis.text.x=element_text(angle=90,hjust=1)) +
+  ylab("") + xlab("")
+dev.off()
+```
+
+
+
+
+### Conclusion (Complete) 
+
+Write down your findings here:
+
+It seems that whenever there is a shift historically (politcally, etc.) there is a rise in art.
+
+
+
+
+
+
+
+
+
+## Question 2. Distribution of the art categories by number of works (Complete) 
+
+
+The `artworks` tibble has the variable `Classification` which indicates the category (genre) of a work. `Classification` was imported as a character vector. 
+
+> _Method 1_ 
+
+Without using the tidyverse package, we can run the command:
+
+`sort(table(artworks$Classification),decreasing = TRUE)`
+
+
+> _Method 2_
+
+The following takes a different method that helps you practice manipulating data with the tidyverse package.
+
+Firstly, print all the distinct categories. 
+
+```{r results='asis'}
+unique(artworks$Classification)
+```
+
+
+In the category list above, which one does not look like an art category? Write down its name here. (Complete)
+Furniture and Interiors
+
+
+Next, the following chunk sorts the categories by number of works in descending order and assign the new tibble to `categories`.
+
+```{r}
+categories <- artworks %>%
+  group_by(Classification) %>%
+  summarise(count=n()) %>%
+  arrange(desc(count))
+  
+```
+
+The code below prints all the rows of `categories` and examine whether the rows have been sorted by the count:
+
+```{r results='markup'}
+categories %>% print(n=33)
+```
+
+
+
+
+The following code chunk visualizes the art category distribution.  
+
+```{r}
+categories$Classification <- factor(categories$Classification, 
+                                    levels = categories$Classification[order(categories$count)])
+
+categories %>% 
+  ggplot(aes(x=Classification, y=count))+ 
+  geom_bar(stat="identity", fill="#87cefa") + 
+  coord_flip() +
+  theme_light() +
+  xlab("") +
+  ylab("")
+```
+
+
+### Conclusions (Complete) 
+
+What will you conclude from the distribution bar chart of the art categories by number of works? 
+Photos and design are the most popular medium.
+
+Do you think the bar chart helps explaining the Modern Art from certain aspects?
+Yes, because it shows what artistic mediums are most used.
+
+
+
+## Question 3: What does the plot show? (Complete) 
+
+October is a popular month. Seasonal effects. There was an increase in Feb, May, & Oct from 2012-2015.
+
+
+[For this question, the script is provided. You need to study and run the script. Pay attention to the element `facet_wrap(~YearAcquired)` in the ggplot. 
+
+By looking at the generated plot, fill in the question title and draw conclusions from the plot.] 
+
+
+
+
+```{r}
+artworks$MonthAcquired <- factor(artworks$MonthAcquired, 
+                        levels=c("01", "02", "03", "04","05",
+                                 "06","07","08","09","10","11","12"), 
+                        ordered = TRUE)
+
+artworks %>%
+  filter(YearAcquired==2018 | YearAcquired==2017 
+         |YearAcquired==2016|YearAcquired==2015
+         |YearAcquired==2014 |YearAcquired==2013
+         |YearAcquired==2012 |YearAcquired==2011
+         |YearAcquired==2010) %>%
+  ggplot(aes(x=MonthAcquired)) + 
+  geom_bar(fill="#60A677") + 
+  scale_x_discrete(drop=FALSE) +
+  facet_wrap(~YearAcquired) +
+  theme_light() +
+  xlab("") +
+  ylab("")
+```
+
+
+## (TO-DO) Question 4: Visualize the gender distribution in the top-5 art categories from Question 2.
+
+```{r}
+
+```
+
+
+
+
+Week 11
+
+
+
+## (TO-DO)Question 5:
+
+
+Week 11
+
+
+## (TO-DO)Question 6:
+
+Week 11
+
+
+
+
+
+# (TO-DO) Task 2:  Clusters by K-means?
+
+Week 12
+
+
+
+# (TO-DO) Task 3: Frequent Itemsets and Association Rules by Apriori?
+
+
+Week 13
+
+
+
+

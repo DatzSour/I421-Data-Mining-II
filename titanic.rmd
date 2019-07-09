@@ -1,0 +1,184 @@
+---
+title: "Titanic Decision Tree"
+name:  "Autumn Neil"
+date:  '`r Sys.Date()`'
+output:
+    html_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = FALSE,eval=FALSE)
+```
+
+
+```{r}
+library("rpart")
+library("rpart.plot")
+library("party")
+library("tidyverse")
+```
+
+
+```{r}
+test <- read_csv("https://www.iun.edu/~cisjw/ds/files/data/test.csv")
+test
+```
+
+```{r}
+train <- read_csv("https://www.iun.edu/~cisjw/ds/files/data/train.csv")
+train
+```
+
+```{r}
+set.seed(20)
+nrows <- sample(nrow(titanic))
+train <- titanic[nrows[1:12],] #take 12 samples for train
+test <- titanic[nrows[13:14],] #take 2 samples for test
+train
+```
+
+```{r}
+# minsplit=100
+set.seed(20)
+titanic.model <- rpart(formula = Survived~Pclass+Sex+Age+Fare+Port, 
+                    data = train,
+                    method = "class", 
+                    control = rpart.control(minsplit=100,cp=0.01),
+                    parms = list(split='information'))
+
+rpart.plot(titanic.model,type = 4, extra = 2) #visual tree
+summary(titanic.model) #textual tree
+print(titanic.model) #decision rules
+```
+
+
+```{r}
+test$predict<- predict(titanic.model, test, type="class")
+test %>% select(Survived,predict)
+```
+
+```{r}
+predict.prob.titanic <- predict(titanic.model, test, type = "prob")
+predict.prob.titanic #a matrix
+```
+
+```{r}
+accuracy.titanic <- nrow(test[test$Survived==test$predict,])/nrow(test)
+accuracy.titanic
+```
+
+
+```{r}
+library(rpart)
+library(rpart.plot)
+TitanicTree_info <- rpart(Survived~Pclass+Sex+Age+Fare+Port,
+                    data=train,
+                    method = "class", 
+                    #control = rpart.control(minsplit=4,cp=0.01),
+                    parms = list(split='information'))
+rpart.plot(TitanicTree_info, extra=4)
+```
+```{r}
+TitanicTree_info <- rpart(Survived~Pclass+Sex+Age+Fare+Port,
+                    data=train,
+                    method = "class", 
+                    #control = rpart.control(minsplit=50,cp=0.01),
+                    parms = list(split='information'))
+rpart.plot(TitanicTree_info, extra=4)
+```
+
+library("tidyverse")
+
+## Boosted tree
+```{r}
+#install.packages(useful)
+#install.packages(xgboost)
+#install.packages(DiagrammeR)
+
+library(useful)
+library(xgboost)
+library(DiagrammeR)
+
+#RESPONSE MUST BE 0 AND 1.
+
+train <- train %>% mutate(class=ifelse(Survived=="No",0,1))
+
+
+titanicFormula <- class~Pclass+Sex+Age+Fare+Port 
+titanicX <- build.x(titanicFormula,train,contrasts=FALSE)
+titanicY <- build.y(titanicFormula,train)
+titanicBoost <- xgboost::xgboost(
+  data=titanicX,
+  label=titanicY,
+  max.depth=3,
+  eta=0.3,
+  #nthread=4,
+  nrounds=10,
+  objective="binary:logistic")
+xgb.plot.multi.trees(
+  titanicBoost,
+  feature.names=colnames(titanicX)
+)
+```
+
+### Save the tree model,load the mode and make predictions
+```{r}
+xgb.save(titanicBoost, "xgboost.model")
+model <- xgb.load("xgboost.model")
+```
+
+
+### Single tree plots
+```{r}
+#install.packages(rsvg)
+#install.packages(DiagrammeRsvg)
+library(rsvg)
+library(DiagrammeR)
+xgb.plot.tree(model=titanicBoost, trees=2:3, render=TRUE)
+```
+
+### Variable importance
+```{r}
+importance_matrix <- xgb.importance(
+  model = titanicBoost,
+  feature_names =colnames(titanicX)
+  )
+print(importance_matrix)
+xgb.plot.importance(importance_matrix = importance_matrix)
+#Alternative
+vip::vip(creditBoost,num_features=10)
+```
+
+
+## Random forest
+R4Everyone Page 364
+```{r}
+#install.packages("randomForest")
+library(randomForest)
+titanicFormula <- class~Pclass+Sex+Age+Fare+Port 
+titanicX <- build.x(titanicFormula,train,contrasts=FALSE)
+titanicY <- build.y(titanicFormula,train)
+titanicForest <- randomForest(x=titanicX,y=titanicY)
+titanicForest
+```
+
+
+## Boosted Random forest via xgboost
+```{r}
+titanicY <- build.y(titanicFormula,train)
+boostedForest <- xgboost(
+  data=titanicX,
+  label=titanicY,
+  max_depth=4,
+  num_parallel_tree=1000,
+  subsample=0.5,
+  colsample_bytree=0.5,
+  nrounds=3,
+  objective="binary:logistic"
+)
+xgb.plot.multi.trees(
+  boostedForest,
+  feature.names=colnames(titanicX)
+)
+```

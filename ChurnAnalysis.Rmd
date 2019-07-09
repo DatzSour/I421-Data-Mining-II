@@ -1,0 +1,69 @@
+---
+title: "R Notebook"
+output: html
+---
+library(tidyverse)
+```{r}
+churn <- read_csv("https://www.iun.edu/~cisjw/ds/files/data/churn_customer.csv")
+summary(churn)
+```
+
+```{r}
+#Add discrete labels in a new column
+churn <- churn %>% mutate(churn_label=ifelse(ChurnIndicator>0.5,1,0))
+#histogram: frequency plot of ChurnIndicator colored by churn label
+churn %>%
+  ggplot(aes(x=ChurnIndicator,fill=as.factor(churn_label)))+
+  geom_bar()+
+  scale_y_log10()+
+  labs(y="log10(count)")
+```
+
+```{r}
+write.csv(churn, file = "churn_v2")
+```
+
+```{r}
+#Distribution
+churn %>%
+  group_by(churn_label)
+  
+```
+
+#correlation analysis
+```{r}
+library(polycor)
+cor <- hetcor(churn$ChurnIndicator,churn$churn_label,churn$Technology,churn$Age,churn$AverageBill,churn$SupportCallsLastYear)
+cor$correlations
+```
+
+```{r}
+library(corrplot)
+corrplot(cor$correlations, method="shade", type="upper", tl.col="black", tl.srt=45 )
+```
+
+```{r}
+cormat <- as_tibble(cor$correlations)
+names <- c("churnIndicator", "churn_label", "technology", "age", "averageBill", "callsLastYear")
+colnames(cormat) <- names
+cormat <- cormat %>% mutate(attribute=names)
+rank <- cormat %>%
+  select(attribute,churnIndicator) %>%
+  mutate(squared.correlation=churnIndicator^2) %>%
+  arrange(desc(squared.correlation))
+rank
+rank$attribute
+```
+
+
+
+
+```{r}
+#normalize
+churn_norm <- as.data.frame()
+```
+
+```{r}
+
+```
+
